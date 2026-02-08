@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 1.CCR Compliance Agent:
 -An end-to-end compliance intelligence backend system that crawls the California Code of Regulations (CCR), structures regulatory data into a canonical hierarchy, indexes it in a vector database, and provides facility-specific compliance guidance using Retrieval-Augmented Generation (RAG).
 
@@ -149,3 +150,7 @@ python agent/facility_advisor.py
 
 13.Disclaimer
 -This system provides educational and informational guidance only and does not constitute legal advice, Users should consult a qualified attorney or compliance professional for official guidance.
+=======
+# ccr-compliance-agent
+Engineering internship assignment: Building a CCR Compliance Agent using Crawl4AI, vector databases, and LLMs.
+>>>>>>> 98aab1cb257c94310fc2cd130798e7ca0361fbbf
