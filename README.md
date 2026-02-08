@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 1.CCR Compliance Agent:
 -An end-to-end compliance intelligence backend system that crawls the California Code of Regulations (CCR), structures regulatory data into a canonical hierarchy, indexes it in a vector database, and provides facility-specific compliance guidance using Retrieval-Augmented Generation (RAG).
 
