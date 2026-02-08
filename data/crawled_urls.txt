@@ -1,0 +1,71 @@
+import asyncio
+import json
+import time
+from pathlib import Path
+from crawl4ai import AsyncWebCrawler, CrawlerRunConfig
+
+SECTION_URLS_FILE = Path("data/section_urls.txt")
+OUTPUT_FILE = Path("data/sections_content.jsonl")
+CHECKPOINT_FILE = Path("data/crawled_urls.txt")
+
+MAX_CONCURRENCY = 2          # 👈 Controlled concurrency
+MAX_RETRIES = 3              # 👈 Retry count
+BASE_BACKOFF = 2             # 👈 Exponential backoff base (seconds)
+
+def load_urls(path):
+    return [u.strip() for u in path.read_text().splitlines() if u.strip()]
+
+def load_checkpoint():
+    if not CHECKPOINT_FILE.exists():
+        return set()
+    return set(CHECKPOINT_FILE.read_text().splitlines())
+
+def save_checkpoint(url):
+    with open(CHECKPOINT_FILE, "a", encoding="utf-8") as f:
+        f.write(url + "\n")
+
+async def crawl_with_retry(crawler, url):
+    for attempt in range(1, MAX_RETRIES + 1):
+        try:
+            result = await crawler.arun(
+                url,
+                config=CrawlerRunConfig(
+                    wait_for="networkidle",
+                    delay_before_return_html=1
+                )
+            )
+            return result
+        except Exception as e:
+            wait_time = BASE_BACKOFF ** attempt
+            print(f"⚠️ Retry {attempt} failed for {url}. Waiting {wait_time}s...")
+            await asyncio.sleep(wait_time)
+    print(f"❌ Failed permanently: {url}")
+    return None
+
+async def main():
+    all_urls = load_urls(SECTION_URLS_FILE)
+    crawled = load_checkpoint()
+
+    pending_urls = [u for u in all_urls if u not in crawled]
+    print(f"🔍 URLs remaining: {len(pending_urls)}")
+
+    semaphore = asyncio.Semaphore(MAX_CONCURRENCY)
+
+    async with AsyncWebCrawler() as crawler:
+        for url in pending_urls:
+            async with semaphore:
+                result = await crawl_with_retry(crawler, url)
+                if result and result.markdown:
+                    with open(OUTPUT_FILE, "a", encoding="utf-8") as f:
+                        f.write(json.dumps({
+                            "url": url,
+                            "markdown": result.markdown,
+                            "html": result.html,
+                            "crawled_at": time.time()
+                        }) + "\n")
+
+                    save_checkpoint(url)
+                    print(f"✅ Crawled: {url}")
+
+if __name__ == "__main__":
+    asyncio.run(main())
