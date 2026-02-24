@@ -6,10 +6,8 @@ from bs4 import BeautifulSoup
 
 START_URL = "https://govt.westlaw.com/calregs/Browse/Home/California/CaliforniaCodeofRegulations"
 OUTPUT_FILE = Path("data/section_urls.txt")
-MAX_SECTIONS = 200
-
+MAX_SECTIONS = 900
 SECTION_PATTERN = re.compile(r"/calregs/Document/")
-
 async def main():
     crawler = AsyncWebCrawler()
     config = CrawlerRunConfig(

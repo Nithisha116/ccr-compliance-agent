@@ -1,0 +1,7 @@
+streamlit
+crawl4ai
+langchain
+langchain-openai
+pinecone-client
+python-dotenv
+openai

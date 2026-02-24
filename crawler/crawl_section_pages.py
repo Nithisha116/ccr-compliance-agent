@@ -17,11 +17,9 @@ def load_valid_urls(path):
 async def main():
     urls = load_valid_urls(SECTION_URLS_FILE)
     print(f"🔍 Valid section URLs: {len(urls)}")
-    print("First 5 URLs:")
-    for u in urls[:5]:
-        print(" -", u)
 
     crawler = AsyncWebCrawler(max_concurrency=1)
+
     config = CrawlerRunConfig(wait_until="networkidle")
 
     success = 0
@@ -50,5 +48,6 @@ async def main():
                 print(f"❌ Error crawling {url}: {e}")
 
     print(f"\n🎉 Finished. Successfully crawled {success} section pages.")
+
 if __name__ == "__main__":
     asyncio.run(main())

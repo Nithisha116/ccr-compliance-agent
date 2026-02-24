@@ -1,9 +1,8 @@
-import chromadb
+import chromadb 
 from sentence_transformers import SentenceTransformer
-from datetime import datetime
 
 # --------------------------------------------------
-# Disclaimer (PDF explicitly requires this)
+# Disclaimer (Required for compliance / PDF spec)
 # --------------------------------------------------
 
 DISCLAIMER = (
@@ -13,7 +12,7 @@ DISCLAIMER = (
 )
 
 # --------------------------------------------------
-# Facility rules & intent (engineering reasoning)
+# Facility rules & reasoning model
 # --------------------------------------------------
 
 FACILITY_RULES = {
@@ -37,15 +36,24 @@ FACILITY_RULES = {
             "Do you serve alcohol?",
             "How many employees work at the facility?",
             "Is food stored or refrigerated on the premises?"
+        ],
+        "irrelevant_titles": [
+            "investment",
+            "finance",
+            "securities",
+            "motor vehicles",
+            "student loan",
+            "tax"
         ]
     },
+
     "farm": {
         "allowed_titles": [
             "Food",
             "Agriculture",
-            "Environmental Protection",
-            "Labor",
-            "Pesticide"
+            "Environmental",
+            "Pesticide",
+            "Labor"
         ],
         "keywords": [
             "farm", "agriculture", "pesticide",
@@ -55,29 +63,41 @@ FACILITY_RULES = {
             "Do you use pesticides or fertilizers?",
             "Do you employ seasonal or migrant workers?",
             "Do you raise livestock?"
+        ],
+        "irrelevant_titles": [
+            "investment",
+            "finance",
+            "securities",
+            "motor vehicles"
         ]
     },
+
     "movie theater": {
         "allowed_titles": [
             "Public Safety",
             "Fire",
-            "Building Standards",
+            "Building",
             "Labor"
         ],
         "keywords": [
-            "theater", "public assembly", "fire safety",
-            "occupancy", "emergency", "employee"
+            "theater", "public assembly", "fire",
+            "occupancy", "emergency", "exit", "employee"
         ],
         "follow_up_questions": [
             "What is the seating capacity?",
             "Do you sell food or beverages?",
             "Do you employ security staff?"
+        ],
+        "irrelevant_titles": [
+            "investment",
+            "finance",
+            "agriculture"
         ]
     }
 }
 
 # --------------------------------------------------
-# Relevance scoring (THIS is the key fix)
+# Relevance scoring engine
 # --------------------------------------------------
 
 def relevance_score(section, facility_type):
@@ -88,24 +108,24 @@ def relevance_score(section, facility_type):
 
     score = 0
 
-    # Strong signal: correct regulatory domain
+    # Hard rejection of clearly irrelevant domains
+    if any(bad in title for bad in rules["irrelevant_titles"]):
+        return -1
+
+    # Strong domain alignment
     for allowed in rules["allowed_titles"]:
         if allowed.lower() in title:
             score += 3
 
-    # Medium signal: operational keywords
+    # Operational signals
     for kw in rules["keywords"]:
         if kw in content:
             score += 2
 
-    # Penalize clearly irrelevant domains
-    if any(bad in title for bad in ["investment", "finance", "securities"]):
-        score -= 3
-
     return score
 
 # --------------------------------------------------
-# Human-readable explanation (mentor-facing)
+# Explanation generator
 # --------------------------------------------------
 
 def explain_relevance(section, facility_type):
@@ -113,40 +133,38 @@ def explain_relevance(section, facility_type):
     section_no = section.get("section_number") or "an unnumbered section"
 
     return (
-        f"This section applies because {facility_type}s are regulated under "
-        f"{title}. Section {section_no} contains provisions that may affect "
-        f"operational, safety, or compliance requirements for this type of facility."
+        f"This section is considered relevant because {facility_type}s commonly "
+        f"operate under regulatory domains related to {title}. Section {section_no} "
+        f"contains provisions that may influence operational, safety, or compliance "
+        f"obligations for this facility type."
     )
 
 # --------------------------------------------------
-# Main RAG agent
+# Main RAG Agent
 # --------------------------------------------------
 
 def main():
-    # Load vector database
     client = chromadb.PersistentClient(path="data/chroma_db")
     collection = client.get_collection("ccr_sections")
 
-    # Load embedding model
     model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
 
-    # Input validation loop
     facility_type = ""
+
     while facility_type not in FACILITY_RULES:
         facility_type = input(
             "Enter facility type (restaurant, farm, movie theater): "
         ).strip().lower()
 
         if facility_type not in FACILITY_RULES:
-            print("❌ Invalid input. Please choose a supported facility type.\n")
+            print("❌ Unsupported facility type. Try again.\n")
 
-    # Embed query (intentionally broad)
-    query_embedding = model.encode(facility_type).tolist()
+    query_text = f"California regulations and compliance requirements for operating a {facility_type}"
+    query_embedding = model.encode(query_text).tolist()
 
-    # Retrieve candidate sections
     results = collection.query(
         query_embeddings=[query_embedding],
-        n_results=25
+        n_results=30
     )
 
     print(f"\n📋 Applicable CCR Sections for {facility_type.capitalize()}:\n")
@@ -163,10 +181,10 @@ def main():
         }
 
         score = relevance_score(section, facility_type)
+
         if score > 0:
             scored_sections.append((score, section))
 
-    # Sort by relevance score
     scored_sections.sort(key=lambda x: x[0], reverse=True)
 
     shown = 0
@@ -186,9 +204,8 @@ def main():
             break
 
     if shown == 0:
-        print("⚠️ No strongly relevant sections found with current information.\n")
+        print("⚠️ No strongly relevant sections identified from current dataset.\n")
 
-    # Follow-up questions (PDF requirement)
     print("❓ Follow-up questions to refine compliance guidance:")
     for q in FACILITY_RULES[facility_type]["follow_up_questions"]:
         print(f"  - {q}")
