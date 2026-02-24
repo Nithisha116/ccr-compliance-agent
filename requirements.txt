@@ -1,7 +1,5 @@
 streamlit
-crawl4ai
-langchain
-langchain-openai
-pinecone-client
+chromadb
+sentence-transformers
+torch
 python-dotenv
-openai
