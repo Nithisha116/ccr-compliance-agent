@@ -1,5 +1,6 @@
 # Virtual environment
 .venv/
+venv/
 
 # Python cache
 __pycache__/
@@ -7,6 +8,11 @@ __pycache__/
 
 # Local reports / generated files
 reports/
+
+# Vector DB / indexes / datasets
+data/chroma_db/
+data/*.index
+data/*.jsonl
 
 # OS files
 .DS_Store
