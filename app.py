@@ -83,7 +83,7 @@ for msg in st.session_state.messages:
 # 6. Chat Logic (Safe + Fallback Mode)
 # -------------------------------------------------------
 
-if prompt := st.chat_input("Ex: What regulations apply to a restaurant?"):
+if prompt := st.chat_input("Anything you want to know about ccr..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
 
     with st.chat_message("user"):
