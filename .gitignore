@@ -9,10 +9,8 @@ __pycache__/
 # Local reports / generated files
 reports/
 
-# Vector DB / indexes / datasets
+# Vector DB (DON'T PUSH THIS)
 data/chroma_db/
-data/*.index
-data/*.jsonl
 
 # OS files
 .DS_Store
